@@ -45,5 +45,70 @@ def most_expensive_baked_good():
     most_expensive_serialized = most_expensive.to_dict()
     return make_response( most_expensive_serialized,   200  )
 
+
+@app.route('/baked_goods', methods = ['GET','POST'])
+def post_goods():
+    if request.method == 'GET':
+        goods = []
+        for good in BakedGood.query.all():
+            good_dict = good.to_dict()
+            goods.append(good_dict)
+        response = make_response(goods,200)
+        return response
+    elif request.method == "POST":
+        new_good = BakedGood(
+            name = request.form.get("name"),
+            price = request.form.get("price"),
+            bakery_id = request.form.get("bakery_id"),
+        )
+
+        db.session.add(new_good)
+        db.session.commit()
+
+        new_good_dict = new_good.to_dict()
+
+        response = make_response(new_good_dict,201)
+        return response
+
+@app.route('/bakeries/<int:id>', methods = ['GET','PATCH'])
+def patch_bakery(id):
+
+    specific_good = Bakery.query.filter(BakedGood.id == id).first()
+
+    if specific_good is None:
+        return make_response("Baked Good not Found", 404)
+    
+    if request.method == 'GET':
+        specific_good_dict = specific_good.to_dict()
+        response = make_response(specific_good_dict,200)
+        return response
+    
+    elif request.method == "PATCH":
+        for attribute in request.form:
+            setattr(specific_good,attribute,request.form.get(attribute))
+
+        db.session.add(specific_good)
+        db.session.commit()
+        
+        specific_good_dict = specific_good.to_dict()
+        response = make_response(specific_good_dict,200)
+        return response
+@app.route("/baked_goods/<int:id>", methods = ['GET','DELETE'])
+def delete_baked_goods(id):
+    specific_good = BakedGood.query.filter(BakedGood.id == id).first()
+
+    if request.method == 'GET':
+        specific_good_dict = specific_good.to_dict()
+        response = make_response(specific_good_dict,200)
+        return response
+    elif request.method == 'DELETE':
+        db.session.delete(specific_good)
+        db.session.commit()
+        response_body = {
+            "delete_successful": True,
+            "message": "Deleted Successfully"
+        }
+
+        return make_response(response_body,200)
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
